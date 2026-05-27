@@ -1,0 +1,57 @@
+{
+  "version": "90.1-2022",
+  "climate_zones": {
+    "5A": {
+      "envelope": {
+        "wall_r_value": 13.0,
+        "wall_ci_r_value": 7.5,
+        "roof_r_value": 30.0,
+        "slab_r_value": 10.0,
+        "window_u_factor": 0.42,
+        "window_shgc": 0.40
+      },
+      "systems": {
+        "heating_cop_min": 3.0,
+        "cooling_eer_min": 12.0,
+        "boiler_eff_min": 0.80,
+        "dhw_eff_min": 0.80
+      },
+      "lighting": {
+        "office_lpd": 0.60,
+        "retail_lpd": 0.90,
+        "warehouse_lpd": 0.40,
+        "multifamily_lpd": 0.60
+      },
+      "ventilation": {
+        "cfm_per_person": 7.5,
+        "cfm_per_sqft": 0.06
+      }
+    },
+    "4A": {
+      "envelope": {
+        "wall_r_value": 13.0,
+        "wall_ci_r_value": 7.5,
+        "roof_r_value": 30.0,
+        "slab_r_value": 10.0,
+        "window_u_factor": 0.42,
+        "window_shgc": 0.40
+      },
+      "systems": {
+        "heating_cop_min": 3.0,
+        "cooling_eer_min": 12.0,
+        "boiler_eff_min": 0.80,
+        "dhw_eff_min": 0.80
+      },
+      "lighting": {
+        "office_lpd": 0.60,
+        "retail_lpd": 0.90,
+        "warehouse_lpd": 0.40,
+        "multifamily_lpd": 0.60
+      },
+      "ventilation": {
+        "cfm_per_person": 7.5,
+        "cfm_per_sqft": 0.06
+      }
+    }
+  }
+}

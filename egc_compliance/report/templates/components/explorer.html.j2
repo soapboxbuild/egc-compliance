@@ -1,0 +1,873 @@
+{# lib/templates/components/explorer.html.j2 #}
+<style>
+    /* Explorer Container */
+    .explorer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 32px;
+    }
+
+    .explorer-header {
+        margin-bottom: 32px;
+    }
+
+    .explorer-header h2 {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 8px;
+    }
+
+    .explorer-header p {
+        font-size: 14px;
+        color: var(--medium-gray);
+    }
+
+    /* Accordion */
+    .accordion {
+        background: var(--white);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-gray);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .accordion-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 24px;
+        cursor: pointer;
+        background: var(--white);
+        border: none;
+        width: 100%;
+        text-align: left;
+        transition: background 0.2s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .accordion-header:hover {
+        background: var(--background);
+    }
+
+    .accordion.baseline .accordion-header {
+        border-left-color: var(--medium-gray);
+    }
+
+    .accordion.reference .accordion-header {
+        border-left-color: var(--blue-1);
+    }
+
+    .accordion.code_2022 .accordion-header {
+        border-left-color: var(--teal-2);
+    }
+
+    .accordion.retrofit .accordion-header {
+        border-left-color: var(--orange-1);
+    }
+
+    .accordion-expand {
+        font-size: 20px;
+        color: var(--medium-gray);
+        transition: transform 0.3s ease;
+        line-height: 1;
+    }
+
+    .accordion.open .accordion-expand {
+        transform: rotate(90deg);
+    }
+
+    .accordion-title {
+        flex: 1;
+    }
+
+    .accordion-title h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 4px;
+    }
+
+    .accordion-title p {
+        font-size: 13px;
+        color: var(--medium-gray);
+    }
+
+    .accordion-badges {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .accordion-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .accordion-badge-label {
+        font-size: 11px;
+        color: var(--light-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .accordion-badge-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary-black);
+    }
+
+    .accordion-badge-delta {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .accordion-badge-delta.positive {
+        background: rgba(46, 125, 50, 0.1);
+        color: var(--success);
+    }
+
+    .accordion-badge-delta.negative {
+        background: rgba(198, 40, 40, 0.1);
+        color: var(--error);
+    }
+
+    .accordion-badge-delta.neutral {
+        background: var(--background);
+        color: var(--medium-gray);
+    }
+
+    /* Accordion Content */
+    .accordion-content {
+        display: none;
+        padding: 0 24px 24px 24px;
+        border-top: 1px solid var(--border-gray);
+    }
+
+    .accordion.open .accordion-content {
+        display: block;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+        padding-top: 24px;
+    }
+
+    .metric-card {
+        background: var(--background);
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid var(--border-gray);
+    }
+
+    .metric-card-label {
+        font-size: 12px;
+        color: var(--light-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .metric-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--primary-black);
+        margin-bottom: 4px;
+    }
+
+    .metric-card-unit {
+        font-size: 13px;
+        color: var(--medium-gray);
+    }
+
+    /* End-Use Breakdown */
+    .end-use-breakdown {
+        margin-bottom: 32px;
+    }
+
+    .end-use-breakdown h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 16px;
+    }
+
+    .end-use-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .end-use-chart {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: var(--background);
+        border-radius: 8px;
+        border: 1px solid var(--border-gray);
+    }
+
+    .end-use-chart canvas {
+        max-height: 300px;
+    }
+
+    .end-use-table {
+        background: var(--background);
+        border-radius: 8px;
+        border: 1px solid var(--border-gray);
+        overflow: hidden;
+    }
+
+    .end-use-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .end-use-table th {
+        background: var(--white);
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--medium-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border-gray);
+    }
+
+    .end-use-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        color: var(--primary-black);
+        border-bottom: 1px solid var(--border-gray);
+    }
+
+    .end-use-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .end-use-table tr:hover {
+        background: var(--white);
+    }
+
+    .end-use-color {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    .end-use-label {
+        vertical-align: middle;
+    }
+
+    /* Notes */
+    .notes-section {
+        margin-top: 32px;
+    }
+
+    .notes-section h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 12px;
+    }
+
+    .notes-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 16px;
+        border: 1px solid var(--border-gray);
+        border-radius: 8px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--primary-black);
+        resize: vertical;
+        background: var(--white);
+        transition: border-color 0.2s ease;
+    }
+
+    .notes-textarea:focus {
+        outline: none;
+        border-color: var(--blue-1);
+    }
+
+    .notes-textarea::placeholder {
+        color: var(--light-gray);
+    }
+
+    .notes-hint {
+        font-size: 12px;
+        color: var(--light-gray);
+        margin-top: 8px;
+    }
+
+    /* Print Styles */
+    @media print {
+        .notes-section {
+            display: none;
+        }
+
+        .accordion {
+            page-break-inside: avoid;
+            box-shadow: none;
+        }
+
+        .accordion.open .accordion-content {
+            display: block !important;
+        }
+
+        .end-use-chart,
+        .end-use-table,
+        .metric-card {
+            box-shadow: none;
+        }
+    }
+</style>
+
+<div class="explorer-container">
+    <div class="explorer-header">
+        <h2>Scenario Explorer</h2>
+        <p>Detailed end-use breakdowns and user notes for each scenario</p>
+    </div>
+
+    <!-- Baseline Accordion -->
+    <div class="accordion baseline" id="accordion-baseline">
+        <button class="accordion-header" onclick="toggleScenario('baseline')">
+            <span class="accordion-expand">▶</span>
+            <div class="accordion-title">
+                <h3>Baseline</h3>
+                <p>As-is building performance</p>
+            </div>
+            {% if explorer_data.baseline.success %}
+            <div class="accordion-badges">
+                <div class="accordion-badge">
+                    <span class="accordion-badge-label">EUI</span>
+                    <span class="accordion-badge-value">{{ results.baseline.raw.eui_kwh_per_sf }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </button>
+        {% if explorer_data.baseline.success %}
+        <div class="accordion-content">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-label">Total Energy</div>
+                    <div class="metric-card-value">{{ (explorer_data.baseline.summary.total_kwh / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">MWh/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Floor Area</div>
+                    <div class="metric-card-value">{{ (explorer_data.baseline.summary.area_ft2 / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">K sq ft</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Heating</div>
+                    <div class="metric-card-value">{{ explorer_data.baseline.summary.unmet_heating | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Cooling</div>
+                    <div class="metric-card-value">{{ explorer_data.baseline.summary.unmet_cooling | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+            </div>
+
+            <!-- End-Use Breakdown -->
+            <div class="end-use-breakdown">
+                <h4>End-Use Breakdown</h4>
+                <div class="end-use-grid">
+                    <div class="end-use-chart">
+                        <canvas id="chart-baseline"></canvas>
+                    </div>
+                    <div class="end-use-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>End Use</th>
+                                    <th style="text-align: right;">kWh/sf</th>
+                                    <th style="text-align: right;">Percent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for end_use, data in explorer_data.baseline.end_uses.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="end-use-color" style="background-color: {{ {
+                                            'heating': '#F94646',
+                                            'cooling': '#066ECC',
+                                            'interior_lighting': '#F7931E',
+                                            'interior_equipment': '#7A2AEB',
+                                            'fans': '#00BC98',
+                                            'pumps': '#4BF7B5',
+                                            'dhw': '#EF81DA'
+                                        }[end_use] }};"></span>
+                                        <span class="end-use-label">{{ end_use.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td style="text-align: right;">{{ data.kwh_per_sf }}</td>
+                                    <td style="text-align: right;">{{ data.pct }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="notes-section">
+                <h4>Notes</h4>
+                <textarea class="notes-textarea" id="notes-baseline"
+                    placeholder="Add notes about this scenario..."
+                    oninput="saveNotes('baseline', this.value)"></textarea>
+                <div class="notes-hint">Notes are saved automatically</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Reference Accordion -->
+    <div class="accordion reference" id="accordion-reference">
+        <button class="accordion-header" onclick="toggleScenario('reference')">
+            <span class="accordion-expand">▶</span>
+            <div class="accordion-title">
+                <h3>Reference (Appendix G)</h3>
+                <p>ASHRAE 90.1 reference building</p>
+            </div>
+            {% if explorer_data.reference.success %}
+            <div class="accordion-badges">
+                <div class="accordion-badge">
+                    <span class="accordion-badge-label">EUI</span>
+                    <span class="accordion-badge-value">{{ results.reference.raw.eui_kwh_per_sf }}</span>
+                </div>
+                {% if results.reference.vs_baseline %}
+                <div class="accordion-badge">
+                    <span class="accordion-badge-delta {{ 'positive' if results.reference.vs_baseline.eui_delta_pct < 0 else 'negative' }}">
+                        {{ results.reference.vs_baseline.eui_delta_pct }}%
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </button>
+        {% if explorer_data.reference.success %}
+        <div class="accordion-content">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-label">Total Energy</div>
+                    <div class="metric-card-value">{{ (explorer_data.reference.summary.total_kwh / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">MWh/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Floor Area</div>
+                    <div class="metric-card-value">{{ (explorer_data.reference.summary.area_ft2 / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">K sq ft</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Heating</div>
+                    <div class="metric-card-value">{{ explorer_data.reference.summary.unmet_heating | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Cooling</div>
+                    <div class="metric-card-value">{{ explorer_data.reference.summary.unmet_cooling | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+            </div>
+
+            <!-- End-Use Breakdown -->
+            <div class="end-use-breakdown">
+                <h4>End-Use Breakdown</h4>
+                <div class="end-use-grid">
+                    <div class="end-use-chart">
+                        <canvas id="chart-reference"></canvas>
+                    </div>
+                    <div class="end-use-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>End Use</th>
+                                    <th style="text-align: right;">kWh/sf</th>
+                                    <th style="text-align: right;">Percent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for end_use, data in explorer_data.reference.end_uses.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="end-use-color" style="background-color: {{ {
+                                            'heating': '#F94646',
+                                            'cooling': '#066ECC',
+                                            'interior_lighting': '#F7931E',
+                                            'interior_equipment': '#7A2AEB',
+                                            'fans': '#00BC98',
+                                            'pumps': '#4BF7B5',
+                                            'dhw': '#EF81DA'
+                                        }[end_use] }};"></span>
+                                        <span class="end-use-label">{{ end_use.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td style="text-align: right;">{{ data.kwh_per_sf }}</td>
+                                    <td style="text-align: right;">{{ data.pct }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="notes-section">
+                <h4>Notes</h4>
+                <textarea class="notes-textarea" id="notes-reference"
+                    placeholder="Add notes about this scenario..."
+                    oninput="saveNotes('reference', this.value)"></textarea>
+                <div class="notes-hint">Notes are saved automatically</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Code 2022 Accordion -->
+    <div class="accordion code_2022" id="accordion-code_2022">
+        <button class="accordion-header" onclick="toggleScenario('code_2022')">
+            <span class="accordion-expand">▶</span>
+            <div class="accordion-title">
+                <h3>90.1-2022 Code Minimum</h3>
+                <p>Current code compliance target</p>
+            </div>
+            {% if explorer_data.code_2022.success %}
+            <div class="accordion-badges">
+                <div class="accordion-badge">
+                    <span class="accordion-badge-label">EUI</span>
+                    <span class="accordion-badge-value">{{ results.code_2022.raw.eui_kwh_per_sf }}</span>
+                </div>
+                {% if results.code_2022.vs_baseline %}
+                <div class="accordion-badge">
+                    <span class="accordion-badge-delta {{ 'positive' if results.code_2022.vs_baseline.eui_delta_pct < 0 else 'negative' }}">
+                        {{ results.code_2022.vs_baseline.eui_delta_pct }}%
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </button>
+        {% if explorer_data.code_2022.success %}
+        <div class="accordion-content">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-label">Total Energy</div>
+                    <div class="metric-card-value">{{ (explorer_data.code_2022.summary.total_kwh / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">MWh/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Floor Area</div>
+                    <div class="metric-card-value">{{ (explorer_data.code_2022.summary.area_ft2 / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">K sq ft</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Heating</div>
+                    <div class="metric-card-value">{{ explorer_data.code_2022.summary.unmet_heating | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Cooling</div>
+                    <div class="metric-card-value">{{ explorer_data.code_2022.summary.unmet_cooling | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+            </div>
+
+            <!-- End-Use Breakdown -->
+            <div class="end-use-breakdown">
+                <h4>End-Use Breakdown</h4>
+                <div class="end-use-grid">
+                    <div class="end-use-chart">
+                        <canvas id="chart-code_2022"></canvas>
+                    </div>
+                    <div class="end-use-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>End Use</th>
+                                    <th style="text-align: right;">kWh/sf</th>
+                                    <th style="text-align: right;">Percent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for end_use, data in explorer_data.code_2022.end_uses.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="end-use-color" style="background-color: {{ {
+                                            'heating': '#F94646',
+                                            'cooling': '#066ECC',
+                                            'interior_lighting': '#F7931E',
+                                            'interior_equipment': '#7A2AEB',
+                                            'fans': '#00BC98',
+                                            'pumps': '#4BF7B5',
+                                            'dhw': '#EF81DA'
+                                        }[end_use] }};"></span>
+                                        <span class="end-use-label">{{ end_use.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td style="text-align: right;">{{ data.kwh_per_sf }}</td>
+                                    <td style="text-align: right;">{{ data.pct }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="notes-section">
+                <h4>Notes</h4>
+                <textarea class="notes-textarea" id="notes-code_2022"
+                    placeholder="Add notes about this scenario..."
+                    oninput="saveNotes('code_2022', this.value)"></textarea>
+                <div class="notes-hint">Notes are saved automatically</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Retrofit Accordion -->
+    <div class="accordion retrofit" id="accordion-retrofit">
+        <button class="accordion-header" onclick="toggleScenario('retrofit')">
+            <span class="accordion-expand">▶</span>
+            <div class="accordion-title">
+                <h3>Retrofit Scenario</h3>
+                <p>With energy conservation measures applied</p>
+            </div>
+            {% if explorer_data.retrofit.success %}
+            <div class="accordion-badges">
+                <div class="accordion-badge">
+                    <span class="accordion-badge-label">EUI</span>
+                    <span class="accordion-badge-value">{{ results.retrofit.raw.eui_kwh_per_sf }}</span>
+                </div>
+                {% if results.retrofit.vs_baseline %}
+                <div class="accordion-badge">
+                    <span class="accordion-badge-delta {{ 'positive' if results.retrofit.vs_baseline.eui_delta_pct < 0 else 'negative' }}">
+                        {{ results.retrofit.vs_baseline.eui_delta_pct }}%
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </button>
+        {% if explorer_data.retrofit.success %}
+        <div class="accordion-content">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-label">Total Energy</div>
+                    <div class="metric-card-value">{{ (explorer_data.retrofit.summary.total_kwh / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">MWh/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Floor Area</div>
+                    <div class="metric-card-value">{{ (explorer_data.retrofit.summary.area_ft2 / 1000) | round(1) }}</div>
+                    <div class="metric-card-unit">K sq ft</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Heating</div>
+                    <div class="metric-card-value">{{ explorer_data.retrofit.summary.unmet_heating | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-label">Unmet Cooling</div>
+                    <div class="metric-card-value">{{ explorer_data.retrofit.summary.unmet_cooling | round(1) }}</div>
+                    <div class="metric-card-unit">hours/year</div>
+                </div>
+            </div>
+
+            <!-- End-Use Breakdown -->
+            <div class="end-use-breakdown">
+                <h4>End-Use Breakdown</h4>
+                <div class="end-use-grid">
+                    <div class="end-use-chart">
+                        <canvas id="chart-retrofit"></canvas>
+                    </div>
+                    <div class="end-use-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>End Use</th>
+                                    <th style="text-align: right;">kWh/sf</th>
+                                    <th style="text-align: right;">Percent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for end_use, data in explorer_data.retrofit.end_uses.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="end-use-color" style="background-color: {{ {
+                                            'heating': '#F94646',
+                                            'cooling': '#066ECC',
+                                            'interior_lighting': '#F7931E',
+                                            'interior_equipment': '#7A2AEB',
+                                            'fans': '#00BC98',
+                                            'pumps': '#4BF7B5',
+                                            'dhw': '#EF81DA'
+                                        }[end_use] }};"></span>
+                                        <span class="end-use-label">{{ end_use.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td style="text-align: right;">{{ data.kwh_per_sf }}</td>
+                                    <td style="text-align: right;">{{ data.pct }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="notes-section">
+                <h4>Notes</h4>
+                <textarea class="notes-textarea" id="notes-retrofit"
+                    placeholder="Add notes about this scenario..."
+                    oninput="saveNotes('retrofit', this.value)"></textarea>
+                <div class="notes-hint">Notes are saved automatically</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Toggle accordion state
+    function toggleScenario(scenario) {
+        const accordion = document.getElementById('accordion-' + scenario);
+        const wasOpen = accordion.classList.contains('open');
+
+        accordion.classList.toggle('open');
+
+        // Save state
+        window.storage.set('accordion_' + scenario, !wasOpen);
+
+        // Initialize chart if opening for first time
+        if (!wasOpen && !window['chart_' + scenario]) {
+            initEndUseChart(scenario);
+        }
+    }
+
+    // Initialize end-use doughnut chart
+    function initEndUseChart(scenario) {
+        const canvas = document.getElementById('chart-' + scenario);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // Get data from explorer_data
+        const explorerData = {{ explorer_data | tojson }};
+        const scenarioData = explorerData[scenario];
+
+        if (!scenarioData || !scenarioData.success) return;
+
+        // Prepare chart data
+        const endUses = scenarioData.end_uses;
+        const labels = [];
+        const data = [];
+        const colors = [];
+
+        const colorMap = {
+            'heating': '#F94646',
+            'cooling': '#066ECC',
+            'interior_lighting': '#F7931E',
+            'interior_equipment': '#7A2AEB',
+            'fans': '#00BC98',
+            'pumps': '#4BF7B5',
+            'dhw': '#EF81DA'
+        };
+
+        for (const [endUse, values] of Object.entries(endUses)) {
+            labels.push(endUse.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            data.push(values.pct);
+            colors.push(colorMap[endUse] || '#808080');
+        }
+
+        // Create chart
+        window['chart_' + scenario] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Save notes to storage
+    function saveNotes(scenario, text) {
+        window.storage.set('notes_' + scenario, text);
+    }
+
+    // Load saved notes
+    function loadNotes() {
+        const scenarios = ['baseline', 'reference', 'code_2022', 'retrofit'];
+        scenarios.forEach(scenario => {
+            const textarea = document.getElementById('notes-' + scenario);
+            if (textarea) {
+                const savedNotes = window.storage.get('notes_' + scenario, '');
+                textarea.value = savedNotes;
+            }
+        });
+    }
+
+    // Restore accordion state and initialize charts
+    function restoreExplorerState() {
+        const scenarios = ['baseline', 'reference', 'code_2022', 'retrofit'];
+        scenarios.forEach(scenario => {
+            const isOpen = window.storage.get('accordion_' + scenario, false);
+            if (isOpen) {
+                const accordion = document.getElementById('accordion-' + scenario);
+                if (accordion) {
+                    accordion.classList.add('open');
+                    initEndUseChart(scenario);
+                }
+            }
+        });
+
+        loadNotes();
+    }
+</script>

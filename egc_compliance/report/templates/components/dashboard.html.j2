@@ -1,0 +1,213 @@
+{# lib/templates/components/dashboard.html.j2 #}
+{# Dashboard tab with interactive Chart.js comparison chart #}
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>Energy Use Intensity Comparison</h2>
+        <p>Annual site energy use per square foot (kWh/sf) by end use</p>
+    </div>
+
+    <div class="chart-wrapper">
+        <canvas id="comparisonChart"></canvas>
+    </div>
+
+    <div class="chart-controls">
+        <div class="control-group">
+            <label>Chart Type:</label>
+            <button class="btn btn-primary" onclick="setChartType('bar')" id="btn-bar">Bar</button>
+            <button class="btn" onclick="setChartType('line')" id="btn-line">Line</button>
+        </div>
+        <div class="control-group">
+            <button class="btn" onclick="toggleStacked()" id="btn-stacked">
+                <span id="stacked-label">Switch to Unstacked</span>
+            </button>
+        </div>
+        <div class="control-group">
+            <button class="btn" onclick="exportChartImage()">Export as PNG</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Chart.js initialization and controls
+(function() {
+    const chartData = {{ chart_data_json | safe }};
+    let chart = null;
+    let isStacked = true;
+    let chartType = 'bar';
+
+    function initComparisonChart() {
+        const ctx = document.getElementById('comparisonChart');
+        if (!ctx) {
+            console.error('Canvas element not found');
+            return;
+        }
+
+        // Load preferences from storage
+        chartType = window.storage.get('chartType', 'bar');
+        isStacked = window.storage.get('isStacked', true);
+
+        // Update button states
+        updateButtonStates();
+
+        // Create chart
+        chart = new Chart(ctx, {
+            type: chartType,
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    title: {
+                        display: false
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 12
+                            },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'rect'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: {
+                            family: 'DM Sans',
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: 'DM Sans',
+                            size: 12
+                        },
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2) + ' kWh/sf';
+                                }
+                                return label;
+                            },
+                            footer: function(tooltipItems) {
+                                if (!isStacked) return '';
+
+                                let total = 0;
+                                tooltipItems.forEach(item => {
+                                    if (item.parsed.y !== null) {
+                                        total += item.parsed.y;
+                                    }
+                                });
+                                return 'Total: ' + total.toFixed(2) + ' kWh/sf';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: isStacked,
+                        ticks: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: isStacked,
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Energy Use Intensity (kWh/sf)',
+                            font: {
+                                family: 'DM Sans',
+                                size: 13,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        });
+    }
+
+    function updateButtonStates() {
+        // Chart type buttons
+        document.getElementById('btn-bar').className = chartType === 'bar' ? 'btn btn-primary' : 'btn';
+        document.getElementById('btn-line').className = chartType === 'line' ? 'btn btn-primary' : 'btn';
+
+        // Stacked label
+        document.getElementById('stacked-label').textContent = isStacked ? 'Switch to Unstacked' : 'Switch to Stacked';
+    }
+
+    window.setChartType = function(type) {
+        if (chartType === type) return;
+
+        chartType = type;
+        window.storage.set('chartType', type);
+
+        if (chart) {
+            chart.destroy();
+        }
+        initComparisonChart();
+    };
+
+    window.toggleStacked = function() {
+        isStacked = !isStacked;
+        window.storage.set('isStacked', isStacked);
+
+        if (chart) {
+            chart.options.scales.x.stacked = isStacked;
+            chart.options.scales.y.stacked = isStacked;
+            chart.update();
+        }
+
+        updateButtonStates();
+    };
+
+    window.exportChartImage = function() {
+        if (!chart) return;
+
+        const url = chart.toBase64Image();
+        const link = document.createElement('a');
+        link.download = 'energy-comparison.png';
+        link.href = url;
+        link.click();
+    };
+
+    // Initialize chart when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initComparisonChart);
+    } else {
+        initComparisonChart();
+    }
+})();
+</script>

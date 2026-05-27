@@ -1,0 +1,595 @@
+{# lib/templates/components/overview.html.j2 #}
+{# Combined overview: scenario cards + chart + table #}
+
+<div class="overview-container">
+    <!-- Scenario Cards -->
+    <div class="section-header">
+        <h2>Scenario EUI Comparison</h2>
+        <p>Energy Use Intensity (kWh/sf·yr) across all scenarios</p>
+    </div>
+
+    <div class="cards">
+        {% for scenario_key, scenario_name in scenario_names.items() %}
+        {% set scenario = results[scenario_key] %}
+        <div class="card">
+            <div class="card-label">{{ scenario_name }}</div>
+            {% if scenario.success %}
+            <div class="card-eui">{{ "%.1f"|format(scenario.raw.eui_kwh_per_sf) }}</div>
+            <div class="card-unit">kWh/sf·yr</div>
+
+            {% if scenario.vs_baseline %}
+            {% set delta_pct = scenario.vs_baseline.eui_delta_pct %}
+            <div class="card-delta {% if delta_pct < 0 %}positive{% elif delta_pct > 0 %}negative{% else %}neutral{% endif %}">
+                {{ "%+.1f"|format(delta_pct) }}% vs baseline
+            </div>
+            {% elif scenario_key == 'baseline' %}
+            <div class="card-delta neutral">⟵ As-Built</div>
+            {% endif %}
+
+            <div class="card-cost">{{ "{:,.0f}".format(scenario.raw.total_site_energy_kwh|int) }} kWh/yr total</div>
+
+            {% if scenario_key == 'code_2022' %}
+            <div class="card-badge benchmark">Code Reference</div>
+            {% elif scenario.vs_baseline and scenario.vs_baseline.eui_delta_pct < 0 %}
+            <div class="card-badge compliant">Better than Baseline</div>
+            {% elif scenario.vs_baseline and scenario.vs_baseline.eui_delta_pct > 0 %}
+            <div class="card-badge noncompliant">Worse than Baseline</div>
+            {% endif %}
+            {% else %}
+            <div class="card-eui" style="font-size: 18px; color: var(--error);">Failed</div>
+            <div class="card-unit">{{ scenario.error|default('Simulation error') }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Chart Section -->
+    <div class="chart-section">
+        <div class="section-header">
+            <h2>Energy Use Intensity by End Use</h2>
+            <p>Stacked bar chart showing annual site energy use (kWh/sf) by category</p>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+        <div class="section-header">
+            <h2>Scenario Comparison Table</h2>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="metrics-table" id="metricsTable">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Status</th>
+                        <th class="numeric">EUI<br><span class="unit">(kWh/sf)</span></th>
+                        <th class="numeric">Total Energy<br><span class="unit">(kWh)</span></th>
+                        <th class="numeric">Savings<br><span class="unit">(%)</span></th>
+                        <th class="numeric">Savings<br><span class="unit">(kWh)</span></th>
+                        <th class="numeric">Cost Savings<br><span class="unit">($/yr)</span></th>
+                        <th class="numeric">Compliance<br><span class="unit">(%)</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_data %}
+                    <tr class="data-row">
+                        <td>
+                            <span class="scenario-badge scenario-{{ row.scenario.lower().replace(' ', '-').replace('.', '-') }}">
+                                {{ row.scenario }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if row.success %}
+                            <span class="status-success">✓ Success</span>
+                            {% else %}
+                            <span class="status-failed">✗ Failed</span>
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.eui is not none %}
+                            {{ "%.1f"|format(row.eui) }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.total is not none %}
+                            {{ "{:,.0f}".format(row.total) }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.savings_pct is not none %}
+                            <span class="{% if row.savings_pct > 0 %}value-positive{% elif row.savings_pct < 0 %}value-negative{% endif %}">
+                                {{ "%+.1f"|format(row.savings_pct) }}%
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.savings_kwh is not none %}
+                            <span class="{% if row.savings_kwh > 0 %}value-positive{% elif row.savings_kwh < 0 %}value-negative{% endif %}">
+                                {{ "{:+,.0f}".format(row.savings_kwh|int) }}
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.cost is not none %}
+                            <span class="{% if row.cost > 0 %}value-positive{% elif row.cost < 0 %}value-negative{% endif %}">
+                                ${{ "{:+,.0f}".format(row.cost|int) }}
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="numeric">
+                            {% if row.compliance is not none %}
+                            <span class="{% if row.compliance < 0 %}value-compliant{% else %}value-noncompliant{% endif %}">
+                                {{ "%+.1f"|format(row.compliance) }}%
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-legend">
+            <h3>Legend</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="value-positive">Green</span> = Energy/cost savings
+                </div>
+                <div class="legend-item">
+                    <span class="value-negative">Red</span> = Energy/cost penalty
+                </div>
+                <div class="legend-item">
+                    <span class="value-compliant">Green compliance</span> = Meets/exceeds code
+                </div>
+                <div class="legend-item">
+                    <span class="value-noncompliant">Red compliance</span> = Below code
+                </div>
+                <div class="legend-item">
+                    <strong>—</strong> = Not applicable (baseline has no deltas)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .overview-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px 32px;
+    }
+
+    /* Scenario Cards Grid */
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin: 24px 0 48px;
+    }
+
+    .card {
+        background: var(--white);
+        border: 1px solid var(--border-gray);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-label {
+        font-size: 12px;
+        color: var(--light-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        font-weight: 500;
+    }
+
+    .card-eui {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--primary-black);
+    }
+
+    .card-unit {
+        font-size: 12px;
+        color: var(--medium-gray);
+        margin-top: 4px;
+    }
+
+    .card-delta {
+        font-size: 14px;
+        margin: 12px 0 4px;
+        font-weight: 600;
+    }
+
+    .card-delta.positive {
+        color: var(--success);
+    }
+
+    .card-delta.negative {
+        color: var(--error);
+    }
+
+    .card-delta.neutral {
+        color: var(--medium-gray);
+    }
+
+    .card-cost {
+        font-size: 13px;
+        color: var(--medium-gray);
+    }
+
+    .card-badge {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .card-badge.compliant {
+        background: rgba(46, 125, 50, 0.1);
+        color: var(--success);
+    }
+
+    .card-badge.noncompliant {
+        background: rgba(198, 40, 40, 0.1);
+        color: var(--error);
+    }
+
+    .card-badge.benchmark {
+        background: var(--background);
+        color: var(--medium-gray);
+    }
+
+    .chart-section,
+    .table-section {
+        background: var(--white);
+        border-radius: 8px;
+        padding: 32px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+        border: 1px solid var(--border-gray);
+    }
+
+    .section-header {
+        margin-bottom: 24px;
+    }
+
+    .section-header h2 {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--primary-black);
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .section-header p {
+        font-size: 14px;
+        color: var(--medium-gray);
+    }
+
+    .chart-wrapper {
+        position: relative;
+        height: 400px;
+        margin-bottom: 0;
+    }
+
+    /* Table Styles */
+    .table-wrapper {
+        overflow-x: auto;
+        margin-bottom: 24px;
+    }
+
+    .metrics-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .metrics-table thead {
+        background: var(--background);
+        border-bottom: 2px solid var(--border-gray);
+    }
+
+    .metrics-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--medium-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+
+    .metrics-table th.numeric {
+        text-align: right;
+    }
+
+    .metrics-table th .unit {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--light-gray);
+    }
+
+    .metrics-table tbody tr {
+        border-bottom: 1px solid var(--border-gray);
+        transition: background 0.15s ease;
+    }
+
+    .metrics-table tbody tr:hover {
+        background: var(--background);
+    }
+
+    .metrics-table td {
+        padding: 14px 16px;
+        font-size: 14px;
+        color: var(--primary-black);
+    }
+
+    .metrics-table td.numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Scenario badges */
+    .scenario-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .scenario-badge.scenario-baseline {
+        background: var(--background);
+        color: var(--primary-black);
+    }
+
+    .scenario-badge.scenario-reference {
+        background: rgba(6, 110, 204, 0.1);
+        color: var(--blue-1);
+    }
+
+    .scenario-badge.scenario-90-1-2022 {
+        background: rgba(0, 188, 152, 0.1);
+        color: var(--teal-2);
+    }
+
+    .scenario-badge.scenario-retrofit {
+        background: rgba(247, 147, 30, 0.1);
+        color: var(--orange-1);
+    }
+
+    /* Status indicators */
+    .status-success {
+        color: var(--success);
+        font-weight: 500;
+    }
+
+    .status-failed {
+        color: var(--error);
+        font-weight: 500;
+    }
+
+    /* Value formatting */
+    .value-positive {
+        color: var(--success);
+        font-weight: 500;
+    }
+
+    .value-negative {
+        color: var(--error);
+        font-weight: 500;
+    }
+
+    .value-compliant {
+        color: var(--success);
+        font-weight: 500;
+    }
+
+    .value-noncompliant {
+        color: var(--error);
+        font-weight: 500;
+    }
+
+    /* Legend */
+    .table-legend {
+        padding: 16px;
+        background: var(--background);
+        border-radius: 4px;
+        border-left: 4px solid var(--blue-1);
+    }
+
+    .table-legend h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--primary-black);
+    }
+
+    .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .legend-item {
+        font-size: 13px;
+        color: var(--medium-gray);
+    }
+
+    @media print {
+        .chart-section,
+        .table-section {
+            box-shadow: none;
+            page-break-inside: avoid;
+        }
+
+        .chart-wrapper {
+            height: 350px;
+        }
+
+        .table-section {
+            page-break-before: auto;
+        }
+    }
+</style>
+
+<script>
+// Chart.js initialization - stacked bar only, no controls
+(function() {
+    const chartData = {{ chart_data_json | safe }};
+
+    function initComparisonChart() {
+        const ctx = document.getElementById('comparisonChart');
+        if (!ctx) {
+            console.error('Canvas element not found');
+            return;
+        }
+
+        // Create stacked bar chart with Audette colors
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2.5,
+                plugins: {
+                    title: {
+                        display: false
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 12,
+                                weight: '500'
+                            },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'rect',
+                            color: '#0F0F0F'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(2, 4, 1, 0.9)',
+                        titleFont: {
+                            family: 'DM Sans',
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: 'DM Sans',
+                            size: 12
+                        },
+                        padding: 12,
+                        displayColors: true,
+                        backgroundColor: 'rgba(15, 15, 15, 0.95)',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#FFFFFF',
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(1) + ' kWh/sf';
+                                }
+                                return label;
+                            },
+                            footer: function(tooltipItems) {
+                                let total = 0;
+                                tooltipItems.forEach(item => {
+                                    if (item.parsed.y !== null) {
+                                        total += item.parsed.y;
+                                    }
+                                });
+                                return 'Total: ' + total.toFixed(1) + ' kWh/sf';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 12
+                            },
+                            color: '#0F0F0F'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'kWh/sf·yr',
+                            font: {
+                                family: 'DM Sans',
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            color: '#0F0F0F'
+                        },
+                        ticks: {
+                            font: {
+                                family: 'DM Sans',
+                                size: 11
+                            },
+                            color: '#0F0F0F'
+                        },
+                        grid: {
+                            color: 'rgba(232, 232, 232, 0.8)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        });
+    }
+
+    // Initialize chart when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initComparisonChart);
+    } else {
+        initComparisonChart();
+    }
+})();
+</script>

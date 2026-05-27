@@ -1,0 +1,294 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://audette.ai/schemas/building_model.json",
+  "title": "Building Energy Model",
+  "description": "JSON Schema for validating building energy model data used in EGC compliance analysis",
+  "type": "object",
+  "required": [
+    "building_uid",
+    "geometry",
+    "envelope",
+    "systems",
+    "lighting",
+    "schedules",
+    "data_sources"
+  ],
+  "properties": {
+    "building_uid": {
+      "type": "string",
+      "description": "Unique identifier for the building",
+      "minLength": 1
+    },
+    "geometry": {
+      "type": "object",
+      "description": "Building geometry parameters",
+      "required": [
+        "footprint_sqft",
+        "stories",
+        "floor_to_floor_ft",
+        "floor_to_ceiling_ft",
+        "wwr"
+      ],
+      "properties": {
+        "footprint_sqft": {
+          "type": "number",
+          "description": "Building footprint area in square feet",
+          "minimum": 100,
+          "maximum": 10000000
+        },
+        "stories": {
+          "type": "integer",
+          "description": "Number of stories/floors",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "floor_to_floor_ft": {
+          "type": "number",
+          "description": "Floor to floor height in feet",
+          "minimum": 8,
+          "maximum": 30
+        },
+        "floor_to_ceiling_ft": {
+          "type": "number",
+          "description": "Floor to ceiling height in feet",
+          "minimum": 7,
+          "maximum": 25
+        },
+        "wwr": {
+          "type": "number",
+          "description": "Window to wall ratio (0.0 to 1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "description": "Building envelope thermal properties",
+      "required": [
+        "wall_r_value",
+        "roof_r_value",
+        "slab_r_value",
+        "window_u_factor",
+        "window_shgc"
+      ],
+      "properties": {
+        "wall_r_value": {
+          "type": "number",
+          "description": "Wall insulation R-value (ft²·°F·h/BTU)",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "roof_r_value": {
+          "type": "number",
+          "description": "Roof insulation R-value (ft²·°F·h/BTU)",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "slab_r_value": {
+          "type": "number",
+          "description": "Slab insulation R-value (ft²·°F·h/BTU)",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "window_u_factor": {
+          "type": "number",
+          "description": "Window U-factor (BTU/ft²·°F·h)",
+          "minimum": 0.2,
+          "maximum": 2.0
+        },
+        "window_shgc": {
+          "type": "number",
+          "description": "Window Solar Heat Gain Coefficient (0.0 to 1.0)",
+          "minimum": 0.1,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "systems": {
+      "type": "object",
+      "description": "HVAC and mechanical systems",
+      "required": [
+        "heating_type",
+        "heating_efficiency",
+        "cooling_type",
+        "cooling_eer",
+        "dhw_type",
+        "dhw_efficiency",
+        "ventilation_cfm_per_sqft",
+        "infiltration_ach"
+      ],
+      "properties": {
+        "heating_type": {
+          "type": "string",
+          "description": "Type of heating system",
+          "enum": [
+            "gas_furnace",
+            "electric_resistance",
+            "heat_pump",
+            "boiler_gas",
+            "boiler_oil",
+            "district_steam",
+            "none"
+          ]
+        },
+        "heating_efficiency": {
+          "type": "number",
+          "description": "Heating efficiency (AFUE for combustion, COP for heat pumps)",
+          "minimum": 0.5,
+          "maximum": 5.0
+        },
+        "cooling_type": {
+          "type": "string",
+          "description": "Type of cooling system",
+          "enum": [
+            "air_conditioner",
+            "heat_pump",
+            "chiller",
+            "none"
+          ]
+        },
+        "cooling_eer": {
+          "type": "number",
+          "description": "Cooling Energy Efficiency Ratio",
+          "minimum": 5,
+          "maximum": 30
+        },
+        "dhw_type": {
+          "type": "string",
+          "description": "Domestic hot water system type",
+          "enum": [
+            "gas_tank",
+            "gas_tankless",
+            "electric_tank",
+            "electric_tankless",
+            "heat_pump_water_heater",
+            "solar_thermal",
+            "district"
+          ]
+        },
+        "dhw_efficiency": {
+          "type": "number",
+          "description": "DHW system efficiency (Energy Factor)",
+          "minimum": 0.5,
+          "maximum": 4.0
+        },
+        "ventilation_cfm_per_sqft": {
+          "type": "number",
+          "description": "Ventilation rate in CFM per square foot",
+          "minimum": 0.0,
+          "maximum": 2.0
+        },
+        "infiltration_ach": {
+          "type": "number",
+          "description": "Infiltration air changes per hour",
+          "minimum": 0.0,
+          "maximum": 5.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "lighting": {
+      "type": "object",
+      "description": "Lighting systems and schedules",
+      "required": [
+        "interior_lpd_w_per_sqft",
+        "exterior_lpd_w_per_sqft"
+      ],
+      "properties": {
+        "interior_lpd_w_per_sqft": {
+          "type": "number",
+          "description": "Interior lighting power density in watts per square foot",
+          "minimum": 0.0,
+          "maximum": 5.0
+        },
+        "exterior_lpd_w_per_sqft": {
+          "type": "number",
+          "description": "Exterior lighting power density in watts per square foot",
+          "minimum": 0.0,
+          "maximum": 2.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "schedules": {
+      "type": "object",
+      "description": "Operating schedules",
+      "required": [
+        "occupancy_type",
+        "operating_hours_per_week"
+      ],
+      "properties": {
+        "occupancy_type": {
+          "type": "string",
+          "description": "Building occupancy classification",
+          "enum": [
+            "office",
+            "retail",
+            "multifamily",
+            "hotel",
+            "warehouse",
+            "industrial",
+            "school",
+            "hospital",
+            "restaurant",
+            "mixed_use"
+          ]
+        },
+        "operating_hours_per_week": {
+          "type": "number",
+          "description": "Typical operating hours per week",
+          "minimum": 0,
+          "maximum": 168
+        }
+      },
+      "additionalProperties": false
+    },
+    "data_sources": {
+      "type": "object",
+      "description": "Data sources and confidence levels",
+      "required": [
+        "geometry_source",
+        "envelope_source",
+        "systems_source"
+      ],
+      "properties": {
+        "geometry_source": {
+          "type": "string",
+          "description": "Source of geometry data",
+          "enum": [
+            "as_built_drawings",
+            "site_survey",
+            "assessor_records",
+            "estimated"
+          ]
+        },
+        "envelope_source": {
+          "type": "string",
+          "description": "Source of envelope data",
+          "enum": [
+            "as_built_drawings",
+            "site_survey",
+            "equipment_labels",
+            "code_minimum",
+            "estimated"
+          ]
+        },
+        "systems_source": {
+          "type": "string",
+          "description": "Source of systems data",
+          "enum": [
+            "equipment_survey",
+            "equipment_labels",
+            "maintenance_records",
+            "estimated"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

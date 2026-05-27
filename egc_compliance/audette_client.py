@@ -83,7 +83,7 @@ class BuildingCollector:
             List of missing field paths (e.g., ['envelope.wall_r_value', 'systems.heating_type'])
         """
         # Load schema
-        schema_path = Path(__file__).parent.parent / 'schemas' / 'building_model.json'
+        schema_path = Path(__file__).parent / 'schemas' / 'building_model.json'
         with open(schema_path) as f:
             schema = json.load(f)
 
@@ -410,7 +410,7 @@ class BuildingCollector:
             raise ImportError("jsonschema library is required for validation. Install with: pip install jsonschema")
 
         # Load schema
-        schema_path = Path(__file__).parent.parent / 'schemas' / 'building_model.json'
+        schema_path = Path(__file__).parent / 'schemas' / 'building_model.json'
         with open(schema_path) as f:
             schema = json.load(f)
 

@@ -301,7 +301,7 @@ class ArtifactBuilder:
         CHARTJS_CDN = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
 
         # 1. Check for locally bundled file
-        local_path = Path(__file__).parent.parent / 'assets' / 'chart.umd.js'
+        local_path = Path(__file__).parent / 'assets' / 'chart.umd.js'
         if local_path.exists():
             try:
                 return f'<script>\n{local_path.read_text()}\n</script>'

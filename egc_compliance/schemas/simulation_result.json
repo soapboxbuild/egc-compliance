@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://audette.ai/schemas/simulation_result.json",
+  "title": "EnergyPlus Simulation Result",
+  "description": "JSON Schema for validating EnergyPlus simulation output data from EGC compliance analysis",
+  "type": "object",
+  "required": [
+    "run_id",
+    "building_uid",
+    "timestamp",
+    "status",
+    "scenarios"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this simulation run",
+      "minLength": 1
+    },
+    "building_uid": {
+      "type": "string",
+      "description": "Unique identifier for the building (matches building_model.json)",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the simulation completed"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the simulation run",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ]
+    },
+    "scenarios": {
+      "type": "array",
+      "description": "Array of simulation scenarios (baseline, reference, code-compliant, retrofit)",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "scenario_type",
+          "eui_total",
+          "eui_heating",
+          "eui_cooling",
+          "eui_lighting",
+          "eui_equipment",
+          "eui_fans",
+          "eui_pumps",
+          "emissions_tco2e",
+          "idf_path",
+          "output_csv_path"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "description": "Unique identifier for this scenario",
+            "minLength": 1
+          },
+          "scenario_type": {
+            "type": "string",
+            "description": "Type of scenario analyzed",
+            "enum": [
+              "baseline",
+              "reference",
+              "90.1-2022",
+              "retrofit"
+            ]
+          },
+          "eui_total": {
+            "type": "number",
+            "description": "Total Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_heating": {
+            "type": "number",
+            "description": "Heating Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_cooling": {
+            "type": "number",
+            "description": "Cooling Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_lighting": {
+            "type": "number",
+            "description": "Lighting Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_equipment": {
+            "type": "number",
+            "description": "Equipment/Plug Loads Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_fans": {
+            "type": "number",
+            "description": "Ventilation Fans Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "eui_pumps": {
+            "type": "number",
+            "description": "Pumps Energy Use Intensity (kBtu/sf/yr)",
+            "minimum": 0
+          },
+          "emissions_tco2e": {
+            "type": "number",
+            "description": "Total carbon emissions in tonnes CO2 equivalent per year",
+            "minimum": 0
+          },
+          "idf_path": {
+            "type": "string",
+            "description": "File path to the EnergyPlus IDF input file",
+            "minLength": 1
+          },
+          "output_csv_path": {
+            "type": "string",
+            "description": "File path to the simulation output CSV file",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

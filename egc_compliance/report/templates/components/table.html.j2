@@ -1,0 +1,508 @@
+{# lib/templates/components/table.html.j2 #}
+{# Sortable metrics table with CSV export #}
+
+<div class="table-container">
+    <div class="table-header">
+        <h2>Scenario Comparison Table</h2>
+        <button class="btn" onclick="exportTableCSV()">Export CSV</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="metrics-table" id="metricsTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('scenario')">
+                        Scenario <span class="sort-indicator" id="sort-scenario">↕</span>
+                    </th>
+                    <th onclick="sortTable('status')">
+                        Status <span class="sort-indicator" id="sort-status">↕</span>
+                    </th>
+                    <th onclick="sortTable('eui')" class="numeric">
+                        EUI<br><span class="unit">(kWh/sf)</span>
+                        <span class="sort-indicator" id="sort-eui">↕</span>
+                    </th>
+                    <th onclick="sortTable('total')" class="numeric">
+                        Total Energy<br><span class="unit">(kWh)</span>
+                        <span class="sort-indicator" id="sort-total">↕</span>
+                    </th>
+                    <th onclick="sortTable('savings_pct')" class="numeric">
+                        Savings<br><span class="unit">(%)</span>
+                        <span class="sort-indicator" id="sort-savings_pct">↕</span>
+                    </th>
+                    <th onclick="sortTable('savings_kwh')" class="numeric">
+                        Savings<br><span class="unit">(kWh)</span>
+                        <span class="sort-indicator" id="sort-savings_kwh">↕</span>
+                    </th>
+                    <th onclick="sortTable('cost')" class="numeric">
+                        Cost Savings<br><span class="unit">($/yr)</span>
+                        <span class="sort-indicator" id="sort-cost">↕</span>
+                    </th>
+                    <th onclick="sortTable('compliance')" class="numeric">
+                        Compliance<br><span class="unit">(%)</span>
+                        <span class="sort-indicator" id="sort-compliance">↕</span>
+                    </th>
+                    <th onclick="sortTable('unmet_hrs')" class="numeric">
+                        Unmet Hours<br><span class="unit">(hrs)</span>
+                        <span class="sort-indicator" id="sort-unmet_hrs">↕</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_data %}
+                <tr class="data-row">
+                    <td>
+                        <span class="scenario-badge scenario-{{ row.scenario.lower().replace(' ', '-').replace('.', '-') }}">
+                            {{ row.scenario }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if row.success %}
+                        <span class="status-success">✓ Success</span>
+                        {% else %}
+                        <span class="status-failed">✗ Failed</span>
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.eui is not none %}
+                        {{ "%.1f"|format(row.eui) }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.total is not none %}
+                        {{ "{:,.0f}".format(row.total) }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.savings_pct is not none %}
+                        <span class="{% if row.savings_pct > 0 %}value-positive{% elif row.savings_pct < 0 %}value-negative{% endif %}">
+                            {{ "%+.1f"|format(row.savings_pct) }}%
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.savings_kwh is not none %}
+                        <span class="{% if row.savings_kwh > 0 %}value-positive{% elif row.savings_kwh < 0 %}value-negative{% endif %}">
+                            {{ "{:+,.0f}".format(row.savings_kwh|int) }}
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.cost is not none %}
+                        <span class="{% if row.cost > 0 %}value-positive{% elif row.cost < 0 %}value-negative{% endif %}">
+                            ${{ "{:+,.0f}".format(row.cost|int) }}
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.compliance is not none %}
+                        <span class="{% if row.compliance < 0 %}value-compliant{% else %}value-noncompliant{% endif %}">
+                            {{ "%+.1f"|format(row.compliance) }}%
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="numeric">
+                        {% if row.unmet_hrs is not none %}
+                        <span class="{% if row.unmet_hrs > 300 %}value-warning{% endif %}">
+                            {{ "{:,.0f}".format(row.unmet_hrs) }}
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-legend">
+        <h3>Legend</h3>
+        <div class="legend-items">
+            <div class="legend-item">
+                <span class="value-positive">Green</span> = Energy/cost savings
+            </div>
+            <div class="legend-item">
+                <span class="value-negative">Red</span> = Energy/cost penalty
+            </div>
+            <div class="legend-item">
+                <span class="value-compliant">Green compliance</span> = Meets/exceeds code
+            </div>
+            <div class="legend-item">
+                <span class="value-noncompliant">Red compliance</span> = Below code
+            </div>
+            <div class="legend-item">
+                <strong>—</strong> = Not applicable (baseline has no deltas)
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        padding: 32px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .table-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        margin-bottom: 24px;
+    }
+
+    .metrics-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .metrics-table thead {
+        background: #F5F5F5;
+        border-bottom: 2px solid #E0E0E0;
+    }
+
+    .metrics-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1A1A1A;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    .metrics-table th:hover {
+        background: #EEEEEE;
+    }
+
+    .metrics-table th.numeric {
+        text-align: right;
+    }
+
+    .metrics-table th .unit {
+        font-size: 11px;
+        font-weight: 400;
+        color: #666;
+    }
+
+    .sort-indicator {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: 12px;
+        color: #999;
+    }
+
+    .metrics-table tbody tr {
+        border-bottom: 1px solid #E0E0E0;
+        transition: background 0.15s ease;
+    }
+
+    .metrics-table tbody tr:hover {
+        background: #FAFAFA;
+    }
+
+    .metrics-table td {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+
+    .metrics-table td.numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Scenario badges */
+    .scenario-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .scenario-badge.scenario-baseline {
+        background: #E0E0E0;
+        color: #1A1A1A;
+    }
+
+    .scenario-badge.scenario-reference {
+        background: #E3F2FD;
+        color: #0D47A1;
+    }
+
+    .scenario-badge.scenario-90-1-2022 {
+        background: #E8F5E9;
+        color: #1B5E20;
+    }
+
+    .scenario-badge.scenario-retrofit {
+        background: #FFF3E0;
+        color: #E65100;
+    }
+
+    /* Status indicators */
+    .status-success {
+        color: #2E7D32;
+        font-weight: 500;
+    }
+
+    .status-failed {
+        color: #C62828;
+        font-weight: 500;
+    }
+
+    /* Value formatting */
+    .value-positive {
+        color: #2E7D32;
+        font-weight: 500;
+    }
+
+    .value-negative {
+        color: #C62828;
+        font-weight: 500;
+    }
+
+    .value-compliant {
+        color: #2E7D32;
+        font-weight: 500;
+    }
+
+    .value-noncompliant {
+        color: #C62828;
+        font-weight: 500;
+    }
+
+    .value-warning {
+        color: #F57C00;
+        font-weight: 500;
+    }
+
+    /* Legend */
+    .table-legend {
+        padding: 16px;
+        background: #F5F5F5;
+        border-radius: 4px;
+        border-left: 4px solid #066ECC;
+    }
+
+    .table-legend h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .legend-item {
+        font-size: 13px;
+        color: #666;
+    }
+
+    @media print {
+        .table-header button {
+            display: none;
+        }
+
+        .metrics-table th {
+            cursor: default;
+        }
+
+        .sort-indicator {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+(function() {
+    let sortColumn = null;
+    let sortDirection = 'asc';
+
+    // Load sort preferences
+    function loadSortPreferences() {
+        sortColumn = window.storage.get('tableSortColumn', null);
+        sortDirection = window.storage.get('tableSortDirection', 'asc');
+
+        if (sortColumn) {
+            updateSortIndicators(sortColumn);
+        }
+    }
+
+    // Sort table by column
+    window.sortTable = function(column) {
+        const table = document.getElementById('metricsTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // Toggle direction if clicking same column
+        if (sortColumn === column) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+        }
+
+        // Sort rows
+        rows.sort((a, b) => {
+            const aValue = getCellValue(a, column);
+            const bValue = getCellValue(b, column);
+
+            let comparison = 0;
+            if (aValue === null && bValue === null) {
+                comparison = 0;
+            } else if (aValue === null) {
+                comparison = 1;  // nulls to bottom
+            } else if (bValue === null) {
+                comparison = -1;  // nulls to bottom
+            } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+                comparison = aValue - bValue;
+            } else {
+                comparison = String(aValue).localeCompare(String(bValue));
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+
+        // Re-append rows in sorted order
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Update UI
+        updateSortIndicators(column);
+
+        // Save preference
+        window.storage.set('tableSortColumn', column);
+        window.storage.set('tableSortDirection', sortDirection);
+    };
+
+    // Extract cell value for sorting
+    function getCellValue(row, column) {
+        const columnIndex = {
+            'scenario': 0,
+            'status': 1,
+            'eui': 2,
+            'total': 3,
+            'savings_pct': 4,
+            'savings_kwh': 5,
+            'cost': 6,
+            'compliance': 7,
+            'unmet_hrs': 8
+        };
+
+        const idx = columnIndex[column];
+        if (idx === undefined) return null;
+
+        const cell = row.cells[idx];
+        const text = cell.textContent.trim();
+
+        // Handle empty cells
+        if (text === '—' || text === '') return null;
+
+        // Handle status column
+        if (column === 'status') {
+            return text.includes('Success') ? 0 : 1;
+        }
+
+        // Handle numeric columns
+        if (column !== 'scenario' && column !== 'status') {
+            // Remove formatting (commas, $, %, +/-)
+            const numText = text.replace(/[$,%+]/g, '').replace(/,/g, '');
+            const num = parseFloat(numText);
+            return isNaN(num) ? null : num;
+        }
+
+        // Text column
+        return text;
+    }
+
+    // Update sort indicator arrows
+    function updateSortIndicators(activeColumn) {
+        // Reset all indicators
+        document.querySelectorAll('.sort-indicator').forEach(indicator => {
+            indicator.textContent = '↕';
+            indicator.style.color = '#999';
+        });
+
+        // Update active indicator
+        const activeIndicator = document.getElementById('sort-' + activeColumn);
+        if (activeIndicator) {
+            activeIndicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+            activeIndicator.style.color = '#066ECC';
+        }
+    }
+
+    // Export table to CSV
+    window.exportTableCSV = function() {
+        const table = document.getElementById('metricsTable');
+        const rows = table.querySelectorAll('tr');
+        const csv = [];
+
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('th, td');
+            const rowData = [];
+
+            cols.forEach(col => {
+                let text = col.textContent.trim();
+                // Clean up header text (remove units and sort indicators)
+                text = text.replace(/↕|↑|↓/g, '').trim();
+                // Escape quotes
+                text = text.replace(/"/g, '""');
+                // Quote if contains comma or newline
+                if (text.includes(',') || text.includes('\n') || text.includes('"')) {
+                    text = '"' + text + '"';
+                }
+                rowData.push(text);
+            });
+
+            csv.push(rowData.join(','));
+        });
+
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'scenario-comparison.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Initialize on load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadSortPreferences);
+    } else {
+        loadSortPreferences();
+    }
+})();
+</script>
