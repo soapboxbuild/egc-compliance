@@ -1,0 +1,9 @@
+{
+  "name": "egc-compliance",
+  "version": "0.1.0",
+  "description": "ASHRAE 90.1-2022 Energy Code Compliance — runs EnergyPlus simulations via the Audette MCP and generates interactive HTML reports covering as-built, DOE reference, code minimum, and retrofit scenarios.",
+  "author": { "name": "Soapbox", "url": "https://soapbox.build" },
+  "homepage": "https://github.com/soapboxbuild/egc-compliance",
+  "license": "Apache-2.0",
+  "skills": ["skills"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "egc-compliance-plugins",
+  "owner": { "name": "Soapbox", "url": "https://soapbox.build" },
+  "plugins": [{
+    "name": "egc-compliance",
+    "source": { "source": "github", "repo": "soapboxbuild/egc-compliance" },
+    "description": "ASHRAE 90.1-2022 Energy Code Compliance report generator — EnergyPlus simulations via Audette.",
+    "version": "0.1.0"
+  }]
+}

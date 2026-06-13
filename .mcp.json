@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "energyplus": {
+      "type": "http",
+      "url": "https://energyplus-mcp-production-0518.up.railway.app/mcp",
+      "headers": { "Authorization": "Bearer ${ENERGYPLUS_MCP_TOKEN}" }
+    }
+  }
+}
