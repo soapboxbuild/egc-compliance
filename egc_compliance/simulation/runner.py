@@ -82,6 +82,7 @@ class SimulationRunner:
 
         # Create temp directory for simulation
         sim_dir = tempfile.mkdtemp(prefix="audette_sim_")
+        _cleanup_needed = True
         idf_path = os.path.join(sim_dir, "model.idf")
 
         try:
@@ -150,6 +151,7 @@ class SimulationRunner:
             # Success - will parse results in subsequent tasks
             weather_name = Path(epw_path).stem
 
+            _cleanup_needed = False
             return {
                 "success": True,
                 "weather_file": weather_name,
@@ -176,9 +178,8 @@ class SimulationRunner:
                 "severe_errors": []
             }
         finally:
-            # Clean up temp directory (except on success where we need results)
-            # Caller is responsible for cleanup after parsing results
-            pass
+            if _cleanup_needed:
+                shutil.rmtree(sim_dir, ignore_errors=True)
 
     def parse_sql_results(self, sql_path: str, sim_dir: str) -> Dict[str, Any]:
         """
