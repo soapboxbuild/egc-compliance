@@ -2,9 +2,26 @@
 
 import copy
 import json
+import os
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
+
+# EGC-H2: Base directory that PDF files must reside under.
+# Override via AUDETTE_PDF_BASE_DIR env var if needed.
+_PDF_BASE_DIR = os.environ.get("AUDETTE_PDF_BASE_DIR", os.path.expanduser("~"))
+
+
+def _validate_pdf_path(pdf_path: str) -> str:
+    """Ensure pdf_path resolves within _PDF_BASE_DIR (prevents path traversal)."""
+    resolved = os.path.realpath(pdf_path)
+    base = os.path.realpath(_PDF_BASE_DIR)
+    if not resolved.startswith(base + os.sep) and resolved != base:
+        raise ValueError(
+            f"PDF path {resolved!r} is outside the allowed base directory {base!r}. "
+            "Set AUDETTE_PDF_BASE_DIR to override."
+        )
+    return resolved
 
 try:
     import jsonschema
@@ -155,6 +172,8 @@ class BuildingCollector:
         if Read is None:
             raise NotImplementedError("Read tool not available")
 
+        # EGC-H2: reject paths that escape the expected base directory
+        pdf_path = _validate_pdf_path(pdf_path)
         pdf_text = Read(file_path=pdf_path)
 
         extracted = {}
