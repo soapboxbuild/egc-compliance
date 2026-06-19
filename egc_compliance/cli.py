@@ -1,5 +1,6 @@
 """CLI interface for egc-compliance."""
 
+import os
 import sys
 import json
 import click
@@ -40,6 +41,20 @@ def run(building_uid, config, output_dir, open, no_parallel, keep_idf, energy_pl
     try:
         # Step 1: Connect to Audette
         console.print("[1/7] Connecting to Audette platform...")
+
+        # Validate EnergyPlus binary path if provided
+        if energy_plus is not None:
+            ep_path = Path(energy_plus).resolve()
+            if not ep_path.is_absolute():
+                console.print(f"[red]Error:[/red] --energy-plus must be an absolute path, got: {energy_plus}")
+                sys.exit(1)
+            ep_bin = ep_path / "energyplus"
+            if not ep_bin.exists():
+                console.print(f"[red]Error:[/red] EnergyPlus binary not found at {ep_bin}")
+                sys.exit(1)
+            if not os.access(str(ep_bin), os.X_OK):
+                console.print(f"[red]Error:[/red] EnergyPlus binary at {ep_bin} is not executable")
+                sys.exit(1)
 
         if config:
             # Load from JSON config

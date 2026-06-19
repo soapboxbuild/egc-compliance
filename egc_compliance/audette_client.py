@@ -138,6 +138,18 @@ class BuildingCollector:
         Returns:
             Dictionary with extracted building data
         """
+        # Path traversal protection
+        try:
+            resolved = Path(pdf_path).resolve()
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid PDF path: {e}")
+        # Reject paths that escape via traversal
+        parts = Path(pdf_path).parts
+        if ".." in parts:
+            raise ValueError(f"Path traversal detected in pdf_path: {pdf_path!r}")
+        # Use resolved path
+        pdf_path = str(resolved)
+
         # In Claude Desktop, the Read tool is available in the execution context
         # For testing, we mock it
         if Read is None:
