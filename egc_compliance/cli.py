@@ -131,8 +131,8 @@ def run(building_uid, config, output_dir, open, no_parallel, keep_idf, energy_pl
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        report_path = output_dir / f"{building_model.name} EGC Compliance.html"
-        print_path = output_dir / f"{building_model.name} EGC Compliance — Print Preview.html"
+        report_path = output_dir / f"{building_model.building_uid} EGC Compliance.html"
+        print_path = output_dir / f"{building_model.building_uid} EGC Compliance — Print Preview.html"
 
         generate_html_report(building_model, compliance_report, report_path)
         generate_html_report(building_model, compliance_report, print_path)  # TODO: Use print template
