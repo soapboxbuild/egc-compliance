@@ -11,7 +11,7 @@ dependencies = [
     "pydantic>=2.0",
     "jinja2>=3.1.4",
     "click>=8.1",
-    "eppy>=0.5.63",
+    "eppy>=0.5.63,<0.5.65",
     "requests>=2.31",
     "rich>=13.0",
 ]
