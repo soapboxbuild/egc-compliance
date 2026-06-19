@@ -322,7 +322,8 @@ class ScenarioEngine:
         runner = SimulationRunner()
         results = {}
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        max_workers = max(1, min(os.cpu_count() or 4, len(idf_dict)))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all scenarios
             futures = {
                 name: executor.submit(
@@ -491,8 +492,10 @@ class ScenarioEngine:
             scenario_val = scenario_end_uses.get(end_use, 0)
             end_use_deltas_kwh[end_use] = scenario_val - baseline_val
 
-        # Cost estimate (simple: $0.12/kWh)
-        cost_savings_annual = energy_savings_kwh * 0.12
+        from egc_compliance.config.energy_rates import DEFAULT_ELEC_RATE_USD_PER_KWH
+        state = self.building_model.get('state', '').upper()
+        elec_rate = DEFAULT_ELEC_RATE_USD_PER_KWH.get(state, 0.12)
+        cost_savings_annual = energy_savings_kwh * elec_rate
 
         deltas = {
             'eui_delta_kwh_per_sf': round(eui_delta, 2),
