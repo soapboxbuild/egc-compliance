@@ -1,6 +1,7 @@
 """CLI interface for egc-compliance."""
 
 import os
+import re
 import sys
 import json
 import click
@@ -10,6 +11,38 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 console = Console()
+
+# EGC-H1: Allowed directories for the EnergyPlus binary.
+_ENERGYPLUS_ALLOWED_DIRS = [
+    "/usr/local/bin",
+    "/usr/local/EnergyPlus-24-1-0",
+    "/Applications/EnergyPlus-24-1-0",
+]
+_SHELL_METACHAR_RE = re.compile(r"[;&|><`$\\!{}\[\]*?~]")
+
+
+def _validate_energyplus_path(path: str) -> Path:
+    """Validate a user-supplied EnergyPlus binary path.
+
+    Raises ValueError if the path is unsafe, does not exist, or is not executable.
+    """
+    if _SHELL_METACHAR_RE.search(path):
+        raise ValueError(f"EnergyPlus path contains invalid characters: {path!r}")
+    resolved = Path(path).resolve()
+    if not resolved.exists():
+        raise ValueError(f"EnergyPlus binary not found: {resolved}")
+    if not os.access(resolved, os.X_OK):
+        raise ValueError(f"EnergyPlus binary is not executable: {resolved}")
+    allowed = any(
+        str(resolved).startswith(str(Path(d).resolve()))
+        for d in _ENERGYPLUS_ALLOWED_DIRS
+    )
+    if not allowed:
+        raise ValueError(
+            f"EnergyPlus binary {resolved} is not under an expected directory. "
+            f"Allowed: {_ENERGYPLUS_ALLOWED_DIRS}"
+        )
+    return resolved
 
 
 @click.group()
@@ -200,6 +233,13 @@ def check_install(energy_plus):
         console.print("\nPlease install EnergyPlus 24.1.0 from:")
         console.print("  https://energyplus.net/downloads")
         console.print("\nOr set ENERGYPLUS_PATH environment variable")
+        sys.exit(1)
+
+    # EGC-H1: validate before passing to subprocess
+    try:
+        ep_path = str(_validate_energyplus_path(ep_path))
+    except ValueError as e:
+        console.print(f"[red]✗[/red] Invalid EnergyPlus path: {e}")
         sys.exit(1)
 
     # Get version
